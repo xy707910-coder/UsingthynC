@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>씽크 차팅 예시 v3.0(병원경기)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500&display=swap');
+:root {
+  --navy:#0F2440; --navy-mid:#1B3A5C; --teal:#0D9488; --teal-dark:#0A7A70;
+  --teal-light:#CCFBF1; --amber:#F59E0B; --red:#EF4444; --rose:#FDA4AF;
+  --bg:#F0F4F8; --card:#FFF; --text:#1E293B; --text-mid:#475569; --text-muted:#94A3B8;
+  --border:#E2E8F0; --radius:10px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);}
+
+.app-header{background:linear-gradient(135deg,var(--navy) 0%,#1E4976 100%);padding:22px 34px;display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid var(--teal);}
+.app-header h1{color:#fff;font-size:20px;font-weight:800;}
+.app-header h1 span{color:var(--teal-light);font-weight:400;font-size:14px;margin-left:8px;}
+.hdr-badges{display:flex;gap:7px;}
+.hdr-badges .b{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);padding:4px 11px;border-radius:6px;font-size:11px;color:rgba(255,255,255,.78);font-weight:500;}
+.hdr-badges .b.v{background:var(--teal);color:#fff;border-color:var(--teal);}
+
+.app-body{display:flex;min-height:calc(100vh - 70px);}
+
+/* Left panel */
+.ref-panel{width:400px;min-width:400px;background:var(--card);border-right:1px solid var(--border);overflow-y:auto;max-height:calc(100vh - 70px);}
+.rp-hdr{position:sticky;top:0;z-index:5;background:var(--navy-mid);color:#fff;padding:11px 18px;font-size:12px;font-weight:700;letter-spacing:.5px;display:flex;justify-content:space-between;align-items:center;}
+.rp-hdr .count{background:var(--teal);padding:2px 8px;border-radius:4px;font-size:10.5px;}
+
+/* Ref search */
+.ref-search{padding:10px 14px;background:#F8FAFC;border-bottom:1px solid var(--border);position:sticky;top:36px;z-index:4;}
+.ref-search input{width:100%;padding:7px 11px;border:1.5px solid var(--border);border-radius:6px;font-family:inherit;font-size:11.5px;outline:none;transition:border-color .15s;}
+.ref-search input:focus{border-color:var(--teal);}
+.ref-search input::placeholder{color:var(--text-muted);font-size:11px;}
+
+/* Category heading */
+.cat-hdr{padding:9px 18px 6px;font-size:10px;font-weight:800;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;background:#F8FAFC;border-bottom:1px dashed var(--border);}
+
+.ref-sec{border-bottom:1px solid var(--border);}
+.ref-sec-t{padding:9px 18px;font-size:12.5px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:7px;user-select:none;transition:background .15s;}
+.ref-sec-t:hover{background:#F8FAFC;}
+.ref-sec-t .d{width:8px;height:8px;border-radius:3px;flex-shrink:0;}
+.ref-sec-t .arr{margin-left:auto;font-size:9px;color:var(--text-muted);transition:transform .2s;}
+.ref-sec.open .arr{transform:rotate(90deg);}
+.ref-sec-b{display:none;padding:0 18px 12px;}
+.ref-sec.open .ref-sec-b{display:block;}
+.ri{background:#F8FAFC;border:1px solid var(--border);border-radius:7px;padding:8px 11px;margin-bottom:5px;font-size:11px;line-height:1.55;}
+.ri .rt{font-weight:700;color:var(--navy-mid);font-size:11.5px;}
+.ri .rj{color:var(--teal-dark);font-weight:600;font-size:10.5px;}
+.ri .rf{color:var(--text-mid);margin-top:3px;}
+.ri .rg{display:inline-block;background:var(--teal-light);color:var(--teal-dark);padding:1px 5px;border-radius:3px;font-size:9.5px;font-weight:600;margin-top:3px;}
+.ri.hi{background:#FEF9C3;border-color:#FDE047;}
+
+/* Spec box in ref panel */
+.spec-box{margin:12px 18px;padding:13px 15px;background:linear-gradient(135deg,#FEF3C7,#FFF8E1);border:1.5px solid #F59E0B;border-radius:8px;}
+.spec-box h3{font-size:12px;font-weight:800;color:#92400E;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.spec-box p{font-size:11px;color:#78350F;line-height:1.6;margin-bottom:3px;}
+.spec-box p strong{color:#92400E;}
+
+/* Right panel */
+.gen-panel{flex:1;padding:26px 34px;overflow-y:auto;max-height:calc(100vh - 70px);}
+.gen-title{font-size:19px;font-weight:800;color:var(--navy);margin-bottom:3px;}
+.gen-sub{font-size:12.5px;color:var(--text-muted);margin-bottom:20px;}
+
+.stats{display:flex;gap:13px;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+.stats .si{font-size:11.5px;color:var(--text-muted);}
+.stats .si strong{color:var(--navy);font-weight:700;font-size:13px;}
+
+/* Steps */
+.step{margin-bottom:18px;}
+.step-l{font-size:11.5px;font-weight:700;color:var(--teal-dark);text-transform:uppercase;letter-spacing:.7px;margin-bottom:7px;display:flex;align-items:center;gap:5px;}
+.sn{width:18px;height:18px;border-radius:50%;background:var(--teal);color:#fff;font-size:9px;font-weight:800;display:inline-flex;align-items:center;justify-content:center;}
+
+/* Category filter for departments */
+.dept-cats{display:flex;gap:5px;margin-bottom:8px;flex-wrap:wrap;}
+.dept-cat{padding:4px 10px;border:1.5px solid var(--border);border-radius:14px;background:var(--card);font-size:10.5px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .15s;font-family:inherit;}
+.dept-cat:hover{border-color:var(--navy-mid);}
+.dept-cat.active{background:var(--navy-mid);border-color:var(--navy-mid);color:#fff;}
+
+.og{display:flex;flex-wrap:wrap;gap:6px;}
+.ob{padding:7px 13px;border:2px solid var(--border);border-radius:7px;background:var(--card);font-size:11.5px;font-weight:600;color:var(--text-mid);cursor:pointer;transition:all .15s;font-family:inherit;}
+.ob:hover{border-color:var(--teal);color:var(--teal);}
+.ob.active{border-color:var(--teal);background:var(--teal-light);color:var(--teal-dark);}
+.ob.hide{display:none;}
+
+/* Symptom chips */
+.sym-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.sym-chip{padding:5px 11px;border:1.5px solid var(--border);border-radius:18px;background:var(--card);font-size:11px;font-weight:500;color:var(--text-mid);cursor:pointer;transition:all .15s;user-select:none;}
+.sym-chip:hover{border-color:var(--red);}
+.sym-chip.active{border-color:var(--red);background:#FEF2F2;color:#991B1B;}
+.sym-chip .ico{margin-right:3px;}
+
+/* Risk chips */
+.risk-grid{display:flex;flex-wrap:wrap;gap:5px;}
+.rc{padding:5px 11px;border:1.5px solid var(--border);border-radius:18px;background:var(--card);font-size:11px;font-weight:500;color:var(--text-mid);cursor:pointer;transition:all .15s;user-select:none;}
+.rc:hover{border-color:var(--amber);}
+.rc.active{border-color:var(--amber);background:#FFFBEB;color:#92400E;}
+
+/* Result */
+.result-area{background:linear-gradient(135deg,#F0FDFA,#F0F9FF);border:2px solid var(--teal);border-radius:11px;padding:22px 24px;margin-top:18px;position:relative;min-height:110px;}
+.result-area.empty{border-color:var(--border);background:#F8FAFC;}
+.result-lbl{position:absolute;top:-10px;left:14px;background:var(--teal);color:#fff;padding:2px 10px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.5px;}
+.result-text{font-size:13.5px;line-height:1.85;color:var(--text);white-space:pre-wrap;}
+.result-placeholder{color:var(--text-muted);font-size:12.5px;text-align:center;padding:16px;}
+.result-ref{margin-top:12px;padding-top:10px;border-top:1px dashed var(--border);font-size:10.5px;color:var(--text-muted);line-height:1.6;}
+.result-ref strong{color:var(--navy-mid);}
+.result-spec{margin-top:10px;padding:10px 14px;background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:6px;font-size:10.5px;color:#78350F;line-height:1.6;}
+.result-spec strong{color:#92400E;}
+
+.action-bar{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;}
+.ab{padding:9px 17px;border:none;border-radius:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;transition:all .15s;}
+.ab-copy{background:var(--navy);color:#fff;}.ab-copy:hover{background:var(--navy-mid);}
+.ab-pdf{background:var(--teal);color:#fff;}.ab-pdf:hover{background:var(--teal-dark);}
+.ab-reset{background:#F1F5F9;color:var(--text-mid);border:1px solid var(--border);}.ab-reset:hover{background:#E2E8F0;}
+
+.toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:9px 22px;border-radius:7px;font-size:12.5px;font-weight:600;z-index:100;opacity:0;transition:opacity .3s;pointer-events:none;}
+.toast.show{opacity:1;}
+
+.copy-inline{display:inline-flex;align-items:center;gap:5px;margin-top:12px;padding:7px 16px;border:1.5px solid var(--teal);border-radius:6px;background:var(--teal-light);color:var(--teal-dark);font-family:inherit;font-size:11.5px;font-weight:700;cursor:pointer;transition:all .15s;}
+.copy-inline:hover{background:var(--teal);color:#fff;}
+.copy-inline.copied{background:#D1FAE5;border-color:#059669;color:#065F46;}
+.copy-inline svg{width:14px;height:14px;fill:currentColor;}
+
+/* Toggle table */
+.all-dt{margin-top:26px;padding-top:18px;border-top:2px solid var(--border);}
+.tgl-btn{background:none;border:2px solid var(--navy-mid);color:var(--navy-mid);padding:9px 18px;border-radius:7px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;transition:all .15s;}
+.tgl-btn:hover{background:var(--navy-mid);color:#fff;}
+.dtw{margin-top:14px;display:none;overflow-x:auto;max-height:70vh;overflow-y:auto;}
+.dtw.show{display:block;}
+table.ft{width:100%;border-collapse:collapse;font-size:11px;line-height:1.5;}
+table.ft th{background:var(--navy);color:#fff;padding:9px 10px;text-align:left;font-weight:700;font-size:10.5px;position:sticky;top:0;z-index:2;}
+table.ft td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top;}
+table.ft tr:nth-child(even) td{background:#F8FAFC;}
+table.ft tr:hover td{background:#F0FDFA;}
+
+@media print{
+  .app-header,.ref-panel,.action-bar,.all-dt,.step,.gen-title,.gen-sub,.stats,.dept-cats{display:none !important;}
+  .gen-panel{padding:20px;}
+  .result-area{border:1px solid #ccc;page-break-inside:avoid;}
+}
+@media(max-width:900px){
+  .app-body{flex-direction:column;}
+  .ref-panel{width:100%;min-width:unset;max-height:260px;}
+  .gen-panel{padding:18px;}
+}
+/* Login overlay */
+.login-overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#0F2440 0%,#1E4976 50%,#0A7A70 100%);z-index:9999;display:flex;align-items:center;justify-content:center;}
+.login-overlay.hidden{display:none;}
+.login-box{background:#fff;border-radius:16px;padding:40px 44px;width:380px;box-shadow:0 20px 60px rgba(0,0,0,0.3);text-align:center;animation:loginIn .4s ease-out;}
+@keyframes loginIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.login-box .logo{font-size:32px;margin-bottom:6px;}
+.login-box h2{font-size:18px;font-weight:800;color:var(--navy);margin-bottom:4px;}
+.login-box .sub{font-size:12px;color:var(--text-muted);margin-bottom:28px;line-height:1.5;}
+.login-box .input-wrap{position:relative;margin-bottom:16px;}
+.login-box input{width:100%;padding:14px 16px;border:2px solid var(--border);border-radius:10px;font-family:inherit;font-size:15px;font-weight:600;text-align:center;letter-spacing:2px;color:var(--navy);outline:none;transition:border-color .2s;}
+.login-box input:focus{border-color:var(--teal);}
+.login-box input::placeholder{font-size:13px;font-weight:400;letter-spacing:0;color:var(--text-muted);}
+.login-box .login-btn{width:100%;padding:13px;border:none;border-radius:10px;background:var(--teal);color:#fff;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;transition:all .15s;margin-top:4px;}
+.login-box .login-btn:hover{background:var(--teal-dark);transform:translateY(-1px);}
+.login-box .login-btn:active{transform:translateY(0);}
+.login-box .err-msg{color:#DC2626;font-size:12px;font-weight:600;margin-top:12px;min-height:18px;transition:opacity .2s;}
+.login-box .hint{font-size:10.5px;color:var(--text-muted);margin-top:20px;padding-top:16px;border-top:1px solid var(--border);line-height:1.5;}
+.app-locked .app-header,.app-locked .app-body{filter:blur(8px);pointer-events:none;user-select:none;}
+</style>
+</head>
+<body class="app-locked">
+
+<!-- Login Overlay -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <div class="logo">🔐</div>
+    <h2>접속 인증</h2>
+    <p class="sub">코드를 입력해 주세요.</p>
+    <div class="input-wrap">
+      <input type="text" id="codeInput" placeholder="코드 입력" maxlength="12" autocomplete="off"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">확인</button>
+    <div class="err-msg" id="errMsg"></div>
+    <p class="hint">코드를 모르시면 담당자에게 문의해 주세요.</p>
+  </div>
+</div>
+<header class="app-header">
+  <h1>심전도 감시 차팅 예시 <span>— 실시간 원격 심전도 감시 처방 근거 (EX871)</span></h1>
+  <div class="hdr-badges"><span class="b">EX871</span><span class="b v">v3.0</span></div>
+</header>
+<div class="app-body">
+<aside class="ref-panel">
+  <div class="rp-hdr">📚 근거 논문 DB <span class="count" id="refCount">0편</span></div>
+  <div class="ref-search">
+    <input type="text" id="refSearch" placeholder="🔍 논문 제목·저널·키워드 검색..." oninput="filterRefs(this.value)">
+  </div>
+  <!-- EX871 Spec Box -->
+  <div class="spec-box">
+    <h3>📋 EX871 기술 명세서 적응증</h3>
+    <p><strong>①</strong> 각종 심혈관계 증상 발생 시 심전도 이상소견의 일치 유무 판정</p>
+    <p><strong>②</strong> 증상 있는 협심증·부정맥 및 <strong>무증상 심근허혈</strong> 감시</p>
+    <p><strong>③</strong> 심장병 치료에 대한 추적검사</p>
+    <p><strong>④</strong> 상심실성/심실성 부정맥, 동기능부전증후군, 방실차단, 허혈성 심질환에 유용</p>
+  </div>
+  <div id="refList"></div>
+</aside>
+<main class="gen-panel">
+  <div class="gen-title">자동 차팅 멘트 생성기 <span style="font-size:11px;font-weight:600;color:var(--teal-dark);background:var(--teal-light);padding:2px 8px;border-radius:4px;margin-left:6px;vertical-align:middle;">v3.0 확장판</span></div>
+  <div class="gen-sub">진료과 → 환자군 → 증상 → 위험요소를 선택하면 기술 명세서 적응증 기반 차팅 멘트가 자동 생성됩니다.</div>
+  <div class="stats">
+    <div class="si">진료과 <strong id="s1">0</strong></div>
+    <div class="si">환자군 <strong id="s2">0</strong></div>
+    <div class="si">근거 논문 <strong id="s3">0</strong></div>
+    <div class="si">증상 <strong id="s4">0</strong>종</div>
+    <div class="si">위험요소 <strong id="s5">0</strong>종</div>
+  </div>
+
+  <div class="step">
+    <div class="step-l"><span class="sn">1</span> 진료과 선택</div>
+    <div class="dept-cats" id="dCats"></div>
+    <div class="og" id="dG"></div>
+  </div>
+  <div class="step"><div class="step-l"><span class="sn">2</span> 환자군 선택</div><div class="og" id="gG"></div></div>
+  <div class="step"><div class="step-l"><span class="sn">3</span> 관련 증상 (복수 선택)</div><div class="sym-grid" id="sG"></div></div>
+  <div class="step"><div class="step-l"><span class="sn">4</span> 동반 위험요소 (복수 선택)</div><div class="risk-grid" id="rG"></div></div>
+
+  <div class="result-area empty" id="rA">
+    <div class="result-lbl">차팅 예시</div>
+    <div id="rC"><div class="result-placeholder">항목을 선택하면 차팅 멘트가 자동 생성됩니다.</div></div>
+  </div>
+  <div class="action-bar">
+    <button class="ab ab-pdf" onclick="window.print()">📄 PDF 추출</button>
+    <button class="ab ab-reset" onclick="resetAll()">↻ 초기화</button>
+  </div>
+  <div class="all-dt">
+    <button class="tgl-btn" onclick="document.getElementById('dtW').classList.toggle('show')">📊 전체 데이터 보기</button>
+    <div class="dtw" id="dtW"><table class="ft" id="fT"></table></div>
+  </div>
+</main>
+</div>
+<div class="toast" id="toast">클립보드에 복사되었습니다</div>
+
+<script>
+// ════════════════════════════════════════════
+// LOGIN — Hospital Code Authentication
+// ════════════════════════════════════════════
+const VALID_CODES = new Set([
+  "10033479","10038346","10038694","10035467","10035639","10032728","10036639","10037680",
+  "10033160","10002829","10037883","10035069","10038231","10038249","10021506","10040639",
+  "10038434","10019136","10033886","10031830","10063044","10017056","10038513","10033875",
+  "10041592","10096603","10032935","10034942","10035968","10036320","10036590","10014151",
+  "10006915","10041502","10047292","10032387","10069147","10066681","10008739","10038463",
+  "10045809","10026494","10047520","10032898","10046812","10037788","10014574","10041141",
+  "10015909","10068728","10060702","10034679","10031447","10037684","10067605","10032706",
+  "10032805","10034115","10032281","10041259","10046527","10032388","10033277","10003837",
+  "10103688","10046731","10036633","10038792","10086968","10044981","10089241","10040724",
+  "10035078","10046570","10033733","10033043","10037290","10041441","10078174","10035562",
+  "10038259","10041888","10039210","10006513","10047340","10038047","10008171","10042063",
+  "10038298","10040990","10038059","10061981","10040095","10035927","10070268","10021890",
+  "10003599","10040545","10041740","10036531","10014653","10038000","10039242","10075257",
+  "10036016","10036735","10091292","10038148","10038304","10038116","10038606","10081683",
+  "10022281","10067520","10086279","10039216","10033726","10070515","10037863","10053087",
+  "10031781","10039905","10074449","10033992","10035113","10092105","10038671","10050471",
+  "10099847","10069441","10035637","10033740","10033272","10037576","10019113","10033614",
+  "10033888","10033270","10082404","10032062","10087161","10032311","10041148","10041416",
+  "10033027","10015488","10041595","10032163","10042527","10032609","10084743","10071000",
+  "10073012","10034735","10034681","10105796","10039694","10041832","10036166","10032900",
+  "10046609","10033023","10048962","10040635","10034707","10037919","10041601","10042934",
+  "10111228","10050868","10040523","10041597","10112263","10077968","10032148","10083322",
+  "10038171",
+  "LCM2026"
+]);
+
+if(sessionStorage.getItem('chartingAuth')==='ok'){
+  document.body.classList.remove('app-locked');
+  document.getElementById('loginOverlay').classList.add('hidden');
+}
+
+function doLogin(){
+  const input = document.getElementById('codeInput');
+  const err = document.getElementById('errMsg');
+  const code = input.value.trim();
+  if(!code){ err.textContent='코드를 입력해 주세요.'; input.focus(); return; }
+  if(VALID_CODES.has(code)){
+    sessionStorage.setItem('chartingAuth','ok');
+    document.getElementById('loginOverlay').classList.add('hidden');
+    document.body.classList.remove('app-locked');
+  } else {
+    err.textContent='유효하지 않은 코드입니다. 다시 확인해 주세요.';
+    input.value=''; input.focus();
+    input.style.borderColor='#DC2626';
+    setTimeout(()=>{ input.style.borderColor=''; },1500);
+  }
+}
+
+// ════════════════════════════════════════════
+// SYMPTOMS — Expanded
+// ════════════════════════════════════════════
+const SYMPTOMS = [
+  { id:"chest_pain", label:"🫀 흉통(Chest Pain)", 
+    phrase:"흉통(Chest Pain)을 호소하고 있으며",
+    spec:"각종 심혈관계 증상(흉통) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 증상 있는 협심증 및 허혈성 심질환의 실시간 감시를 위해" },
+  { id:"palpitation", label:"💓 두근거림(Palpitation)",
+    phrase:"두근거림(Palpitation)을 호소하고 있으며",
+    spec:"심혈관계 증상(두근거림) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 상심실성·심실성 부정맥의 감별 및 실시간 감시를 위해" },
+  { id:"syncope", label:"😵 실신/어지러움(Syncope)",
+    phrase:"실신(Syncope) 또는 어지러움을 호소하고 있으며",
+    spec:"심혈관계 증상(실신/어지러움) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 동기능부전증후군 및 방실차단의 감별을 위해" },
+  { id:"dyspnea", label:"🌬️ 호흡곤란(Dyspnea)",
+    phrase:"호흡곤란(Dyspnea)을 호소하고 있으며",
+    spec:"심혈관계 증상(호흡곤란) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 심부전 관련 부정맥 및 허혈성 변화의 감시를 위해" },
+  { id:"fatigue", label:"😮‍💨 피로/권태(Fatigue)",
+    phrase:"원인 불명의 피로감(Fatigue)을 호소하고 있으며",
+    spec:"심혈관계 증상(피로/권태) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 무증상 심근허혈 또는 간헐적 부정맥의 포착을 위해" },
+  { id:"diaphoresis", label:"💧 발한/식은땀(Diaphoresis)",
+    phrase:"식은땀(Diaphoresis) 등 자율신경 이상 증상이 관찰되고 있으며",
+    spec:"심혈관계 증상(발한/자율신경 불균형) 발생 시 심전도 이상소견의 일치 유무를 판정하고, 허혈성 이벤트 및 부정맥의 조기 포착을 위해" },
+  { id:"altered_mental", label:"🧠 의식변화(Altered MS)",
+    phrase:"의식 변화 또는 혼돈(Altered Mental Status)이 관찰되고 있으며",
+    spec:"저관류·부정맥에 의한 이차적 의식 변화 가능성을 고려하여 심전도 이상소견의 일치 유무를 판정하고, 심혈관계 원인 배제를 위해" },
+  { id:"no_symptom", label:"🔇 무증상(Asymptomatic)",
+    phrase:"현재 특별한 심혈관계 증상은 없으나",
+    spec:"무증상 심근허혈 및 심장병 치료에 대한 추적검사 목적으로, 증상이 없더라도 발생 가능한 허혈성 이벤트 및 부정맥의 조기 포착을 위해" },
+  { id:"tachycardia", label:"⚡ 빈맥(Tachycardia)",
+    phrase:"빈맥과 같은 부정맥 증상이 관찰되고 있으며",
+    spec:"상심실성 부정맥, 심실성 부정맥 환자에 유용한 검사로서 부정맥의 양상·빈도·지속시간의 실시간 감시를 위해" },
+  { id:"bradycardia", label:"⚡ 서맥(Bradycardia)",
+    phrase:"서맥과 같은 부정맥 증상이 관찰되고 있으며",
+    spec:"동기능부전증후군, 방실차단 환자에 유용한 검사로서 부정맥의 양상·빈도·지속시간의 실시간 감시를 위해" },
+  { id:"irregular", label:"〰️ 불규칙 맥박(Irregular)",
+    phrase:"불규칙한 맥박이 관찰되고 있으며",
+    spec:"발작성 심방세동 등 간헐적 부정맥의 양상·빈도·지속시간을 포착하기 위한 연속 감시를 위해" },
+  { id:"follow_up", label:"🔄 치료 추적(Follow-up)",
+    phrase:"심장병 치료(약물/시술) 후 추적 관찰이 필요한 상태로",
+    spec:"심장병 치료에 대한 추적검사로서, 치료 효과 판정 및 재발 여부의 연속 감시를 위해" },
+];
+
+// ════════════════════════════════════════════
+// RISK FACTORS — Expanded
+// ════════════════════════════════════════════
+const RISKS = [
+  { id:"age65", label:"고령 (≥65세)", phrase:"65세 이상의 고령으로 기저 심혈관 질환 유병률이 높고" },
+  { id:"age75", label:"초고령 (≥75세)", phrase:"75세 이상의 초고령으로 부정맥 및 심혈관 이벤트 위험이 현저히 높고" },
+  { id:"cvd", label:"심혈관 기왕력", phrase:"고혈압/관상동맥질환/부정맥 기왕력이 있으며" },
+  { id:"hf_hx", label:"심부전 기왕력", phrase:"심부전 기왕력이 있어 약물 유발 부정맥 및 급성 악화 위험이 높고" },
+  { id:"af_hx", label:"심방세동 기왕력", phrase:"심방세동 기왕력이 있어 재발 위험이 높으며" },
+  { id:"dm", label:"당뇨병", phrase:"당뇨병을 동반하여 대사 장애에 의한 심혈관 합병증 위험이 높고" },
+  { id:"obesity", label:"비만/OSA", phrase:"비만 및 수면무호흡증을 동반하여 야간 저산소증에 의한 부정맥 위험이 있고" },
+  { id:"ckd", label:"만성신질환(CKD)", phrase:"만성신질환(CKD)을 동반하여 전해질 대사 장애 및 약물 축적 위험이 높고" },
+  { id:"copd_hx", label:"COPD/만성 폐질환", phrase:"만성 폐질환을 동반하여 저산소혈증·고탄산혈증에 의한 부정맥 위험이 높고" },
+  { id:"smoking", label:"흡연", phrase:"흡연력이 있어 관상동맥질환 위험이 누적되어 있으며" },
+  { id:"alcohol", label:"알코올 남용", phrase:"만성 음주 또는 알코올 남용력이 있어 심근·자율신경 이상 위험이 있고" },
+  { id:"opioid", label:"오피오이드 투여 중", phrase:"오피오이드(PCA 등) 투여 중으로 호흡 억제에 의한 서맥·SpO₂ 저하 위험이 있으며" },
+  { id:"electrolyte", label:"전해질 이상 위험", phrase:"이뇨제·수액·수혈 치료 중으로 전해질 변동에 의한 부정맥 위험이 있고" },
+  { id:"qt_drug", label:"QT 연장 약물 복용", phrase:"QT 간격을 연장시킬 수 있는 약물을 투여 중으로 Torsades de Pointes 위험이 있으며" },
+  { id:"polypharmacy", label:"다약제 복용 (≥5종)", phrase:"다약제 복용(Polypharmacy)으로 약물 상호작용에 의한 심혈관 이상반응 위험이 있고" },
+  { id:"post_op", label:"수술 후 72시간 이내", phrase:"수술 후 72시간 이내로 무증상 심근손상(MINS) 발생 위험이 높은 상태이며" },
+  { id:"immobile", label:"장기 와상/부동", phrase:"장기 와상 상태로 심부정맥혈전증 및 폐색전증 위험이 있어" },
+  { id:"sepsis_risk", label:"감염/패혈증 위험", phrase:"전신 감염으로 패혈증 유발성 심근 억제 및 부정맥 위험이 증가되어 있고" },
+];
+
+
+// ════════════════════════════════════════════
+// DEPARTMENT DATA — v3.0 Expanded (15 depts / ~50 groups / 100+ refs)
+// ════════════════════════════════════════════
+const DATA = {
+  // ─────── 신경과 (Neurology) — 6 groups ───────
+  "신경과": {
+    color:"#2E86C1",
+    category:"내과계",
+    groups: {
+      "급성 뇌경색 (Acute Stroke)": {
+        refs:[
+          {title:"Post-stroke AF detection via continuous ECG",journal:"International Journal of Stroke",year:2018,finding:"뇌졸중 후 1년간 AF 발생 위험 일반인 대비 7배 증가"},
+          {title:"Optimal timing of continuous ECG monitoring for AF detection after stroke",journal:"Cerebrovascular Diseases",year:2014,finding:"연속 ECG 감시(중앙값 5.3일) 시 AF 발견율 13.8%"},
+          {title:"7-day Holter ECG monitoring of post-stroke arrhythmias",journal:"Scientific Reports",year:2022,finding:"7일 홀터가 24시간 대비 모든 부정맥 감지율 우수"},
+          {title:"Takotsubo cardiomyopathy post-stroke",journal:"Stroke (AHA)",year:2021,finding:"급성 뇌졸중 후 스트레스성 심근병증·ST 변화 발생 보고"},
+        ],
+        core:"급성 뇌경색 진단 환자로, International Journal of Stroke(2018)에 따르면 뇌졸중 발병 후 1년간 심방세동 발생 위험이 일반인 대비 7배 이상 증가함이 보고됨. 은폐된 심방세동(Hidden AF) 포착을 통한 재발 방지 및 항응고 치료 전환 결정을 위해"
+      },
+      "원인불명 뇌졸중 (Cryptogenic Stroke)": {
+        refs:[
+          {title:"CRYSTAL AF Study",journal:"NEJM",year:2014,finding:"연속 ECG 모니터링 시 AF 발견율 일반 검사 대비 6배(12.4% vs 2.0%)"},
+          {title:"EMBRACE Trial",journal:"NEJM",year:2014,finding:"30일 이벤트 모니터에서 AF 검출율 16.1% vs 24시간 홀터 3.2%"},
+          {title:"STROKE-AF RCT",journal:"JAMA",year:2021,finding:"장기 심전도 감시 시 AF 발견율 표준 치료 대비 유의하게 높음"},
+          {title:"2024 ACC Expert Consensus — Arrhythmia Monitoring After Stroke",journal:"JACC",year:2024,finding:"14일 패치 ECG가 표준 대비 10배 높은 AF 감지율"},
+        ],
+        core:"원인 불명의 뇌졸중(Cryptogenic Stroke) 환자로, CRYSTAL AF 연구(NEJM, 2014)에 따르면 연속적 심전도 모니터링 시 심방세동 발견율이 일반 검사 대비 6배 이상 높음이 확인됨. 재발 위험 조기 차단 및 항응고 치료 결정을 위해"
+      },
+      "뇌출혈 (ICH)": {
+        refs:[
+          {title:"Cerebrocardiac Syndrome after ICH",journal:"Journal of Neurosurgery",year:2020,finding:"뇌출혈 후 뇌심장증후군 위험 상존"},
+          {title:"Cardiac complications in hemorrhagic stroke",journal:"Stroke (AHA)",year:2019,finding:"뇌출혈 후 24~72시간 내 심근 손상 마커 상승률 20~30%"},
+          {title:"ECG abnormalities after intracranial hemorrhage",journal:"Neurocrit Care",year:2022,finding:"ICH 환자 70% 이상에서 QT 연장·ST/T 변화 등 이상 소견"},
+        ],
+        core:"뇌출혈(ICH) 이후 자율신경계 불균형으로 인한 '뇌심장증후군(Cerebrocardiac Syndrome)' 위험이 상존함(Journal of Neurosurgery). 심근 손상 및 부정맥의 조기 발견을 위해"
+      },
+      "지주막하출혈 (SAH)": {
+        refs:[
+          {title:"Neurogenic stunned myocardium after SAH",journal:"Stroke",year:2020,finding:"SAH 환자 30~50%에서 심근 이상, ECG 변화 및 트로포닌 상승"},
+          {title:"Arrhythmias after aneurysmal SAH",journal:"Neurocrit Care",year:2021,finding:"SAH 후 부정맥 발생률 35~49%, 심실성 부정맥이 불량 예후와 연관"},
+          {title:"QT prolongation in SAH and risk of sudden death",journal:"Journal of Neurology",year:2019,finding:"SAH 초기 QTc 연장 빈번, Torsades 위험 증가"},
+        ],
+        core:"지주막하출혈(SAH) 환자로, Stroke(2020)에 따르면 SAH 환자의 30~50%에서 신경성 심근병증(Neurogenic Stunned Myocardium)이 발생하며, 부정맥 발생률은 35~49%에 달함. 치명적 심실성 부정맥 및 QT 연장의 실시간 포착을 위해"
+      },
+      "일과성 뇌허혈 발작 (TIA)": {
+        refs:[
+          {title:"AF detection after TIA",journal:"Lancet Neurology",year:2015,finding:"TIA 후 연속 ECG 시 AF 진단율 5배 이상 증가"},
+          {title:"Prolonged cardiac monitoring after TIA",journal:"Neurology",year:2020,finding:"14일 패치 모니터링 시 AF 감지율 표준 치료 대비 유의하게 상승"},
+        ],
+        core:"일과성 뇌허혈 발작(TIA) 환자로, Lancet Neurology(2015) 체계적 리뷰에 따르면 TIA 후 연속적 심전도 모니터링 시 심방세동 진단율이 기존 방식 대비 5배 이상 증가함. 뇌졸중 진행 방지를 위해"
+      },
+      "뇌전증/경련 (Epilepsy/Seizure)": {
+        refs:[
+          {title:"Sudden Unexpected Death in Epilepsy (SUDEP)",journal:"Lancet Neurology",year:2021,finding:"뇌전증 환자 SUDEP 위험 대부분이 발작 주변 시기 부정맥·심정지와 연관"},
+          {title:"Peri-ictal cardiac arrhythmias",journal:"Epilepsia",year:2020,finding:"전신성 발작 동반 시 서맥·심정지·ST 변화 등 발작 주변기 심장 변화 다수"},
+          {title:"Ictal bradycardia and asystole",journal:"Neurology",year:2019,finding:"측두엽 발작 환자 일부에서 ictal asystole 발생, 연속 ECG 감시 필수"},
+        ],
+        core:"뇌전증 또는 반복되는 경련 환자로, Lancet Neurology(2021)에 따르면 뇌전증 관련 사망의 상당 부분이 발작 주변기 심장 부정맥 및 심정지(SUDEP)와 연관됨. 발작 주변기 서맥·심정지·QT 변화 등의 실시간 포착을 위해"
+      },
+    }
+  },
+
+  // ─────── 심장외과 (Cardiac Surgery) — 3 groups ───────
+  "심장외과": {
+    color:"#B91C1C",
+    category:"외과계",
+    groups: {
+      "관상동맥우회술 (CABG) 후": {
+        refs:[
+          {title:"POAF after CABG — dual-modality monitoring",journal:"Diagnostics",year:2026,finding:"CABG 후 POAF 20~30%, 첫 72시간에 peak, 6주까지 baseline 도달"},
+          {title:"Long-term continuous monitoring of new-onset AF after CABG",journal:"JAMA (cohort)",year:2025,finding:"ILR 연속 모니터링 시 CABG 후 1년 내 신규 AF 발생률이 기존 보고치보다 유의하게 높음"},
+          {title:"SEARCH-AF trial — 30-day ECG monitoring post cardiac surgery",journal:"JAMA Network Open",year:2021,finding:"퇴원 후 30일 연속 ECG가 통상 관리 대비 AF 감지율 유의하게 증가"},
+          {title:"POAF and long-term stroke risk after CABG",journal:"Circulation",year:2020,finding:"POAF 환자 장기 뇌졸중 위험 유의하게 증가, 항응고 고려 필요"},
+          {title:"Prevalence and determinants of arrhythmias after CABG",journal:"Clinical Cardiology",year:2024,finding:"CABG 후 부정맥 32.4%, AF 24.8%, 71.3%가 72시간 내 발생, 입원 사망률 증가"},
+        ],
+        core:"관상동맥우회술(CABG) 시행 환자로, 최근 연구(Diagnostics, 2026; Clinical Cardiology, 2024)에 따르면 CABG 후 심방세동 발생률이 20~30%에 이르고, 대부분(71.3%)이 수술 후 72시간 내 발생하며, 2023 ACC/AHA/HRS 및 2024 ESC AF 가이드라인은 수술 후 연속 심전도 감시를 권고함. 조기 POAF 감지 및 장기 뇌졸중 위험 평가를 위해"
+      },
+      "판막수술 (SAVR/MVR) 후": {
+        refs:[
+          {title:"POAF after surgical aortic valve replacement",journal:"Diagnostics",year:2026,finding:"SAVR 후 POAF 발생률 최대 40%, 감시 연장 시 late POAF 추가 포착"},
+          {title:"Conduction disturbances after valve surgery",journal:"Eur Heart J",year:2020,finding:"대동맥판막 수술 후 AV block·LBBB 발생률 10~20%, 영구 페이스메이커 필요 환자 존재"},
+          {title:"Arrhythmia management after cardiac valve surgery",journal:"Europace",year:2022,finding:"판막수술 후 조기 부정맥 감시 및 재발성 POAF의 연속 포착이 예후 개선에 기여"},
+        ],
+        core:"심장 판막수술(SAVR/MVR) 시행 환자로, Diagnostics(2026) 등에 따르면 판막수술 후 POAF 발생률은 최대 40%에 이르며, 방실차단·각차단 등 전도 장애 발생 위험도 10~20%로 보고됨. 조기 POAF 및 전도 장애의 실시간 포착을 통한 영구 페이스메이커 적응증 판단을 위해"
+      },
+      "대동맥 수술 (Aortic Repair)": {
+        refs:[
+          {title:"Arrhythmias after thoracic aortic surgery",journal:"Ann Thorac Surg",year:2020,finding:"흉부 대동맥 수술 후 POAF 30~50%, 뇌경색·사망률과 연관"},
+          {title:"New-onset AF after aortic surgery and long-term outcomes",journal:"J Thorac Cardiovasc Surg",year:2022,finding:"대동맥 수술 후 신규 AF 발생 환자 장기 사망률·뇌졸중 위험 유의하게 증가"},
+        ],
+        core:"대동맥 수술(흉부/복부) 시행 환자로, Ann Thorac Surg(2020)에 따르면 흉부 대동맥 수술 후 POAF 발생률이 30~50%에 달하며 뇌경색·사망률과 유의하게 연관됨. 술 후 재관류 부정맥 및 신규 POAF의 연속 감시를 위해"
+      },
+    }
+  },
+
+  // ─────── 외과계 (Non-cardiac Surgery) — 4 groups ───────
+  "외과계 (비심장 수술 후)": {
+    color:"#E67E22",
+    category:"외과계",
+    groups: {
+      "고령/고위험 비심장 수술 후": {
+        refs:[
+          {title:"VISION Study — hsTnT and 30-day mortality",journal:"JAMA",year:2017,finding:"비심장 수술 후 MINS 80% 이상이 무증상, 30일 사망률과 유의한 연관"},
+          {title:"AHA Scientific Statement on MINS",journal:"Circulation",year:2021,finding:"고위험 환자 술 후 48~72시간 연속 ECG 감시 권고"},
+          {title:"Perioperative Myocardial Injury — Incidence",journal:"Circulation",year:2018,finding:"MINS 발생률 12~24%, 비응급 수술에서도 유의미한 심근 손상"},
+          {title:"CCS Perioperative Cardiac Risk Guidelines",journal:"Can J Cardiol",year:2017,finding:"65세↑ 또는 심혈관 기왕력 환자 술 후 즉시 ECG 및 트로포닌 측정 권고"},
+        ],
+        core:"비심장 수술을 시행한 환자로, VISION 연구(JAMA, 2017)에 따르면 비심장 수술 후 발생하는 무증상 심근손상(MINS)이 80% 이상이며 30일 사망률과 유의한 연관이 있음. 수술 후 72시간 내 허혈성 이벤트의 실시간 포착을 위해"
+      },
+      "정형외과 수술 (TKR/THR/척추)": {
+        refs:[
+          {title:"VISION Substudy — MINS in Orthopaedic Surgery",journal:"J Bone Joint Surg Am",year:2020,finding:"정형외과 수술 환자 11.9%에서 MINS 발생, 84% 무증상"},
+          {title:"DVT/PE risk after joint replacement",journal:"The Bone & Joint Journal",year:2019,finding:"고령 인공관절 수술 후 심부하 변동 및 PE 위험 증가"},
+          {title:"Arrhythmia after hip fracture surgery in elderly",journal:"Age and Ageing",year:2021,finding:"고령 고관절 수술 후 AF 등 신규 부정맥 발생률 증가, 예후와 연관"},
+        ],
+        core:"근골격계 수술 환자로, VISION 하위 분석(J Bone Joint Surg, 2020)에 따르면 정형외과 수술 환자의 11.9%에서 MINS가 발생하며 그 중 84%가 무증상임. DVT/PE에 의한 급격한 심부하 변동 가능성을 고려하여"
+      },
+      "흉부외과 수술 (폐절제/식도)": {
+        refs:[
+          {title:"Post-thoracic surgery atrial fibrillation",journal:"Eur J Cardiothorac Surg",year:2020,finding:"폐절제술 후 AF 발생률 12~40%"},
+          {title:"Esophagectomy and postoperative arrhythmia",journal:"Ann Thorac Surg",year:2021,finding:"식도절제술 후 AF 발생률 20~30%, 폐합병증과 연관"},
+        ],
+        core:"흉부수술(폐절제/식도수술) 시행 환자로, 문헌에 따르면 흉부수술 후 심방세동 발생률이 12~40%에 달함. 술 후 AF 및 호흡 합병증의 조기 감지를 위해"
+      },
+      "복부 대수술 (간/췌장/위)": {
+        refs:[
+          {title:"MINS in major abdominal surgery",journal:"Ann Surg",year:2023,finding:"주요 복부수술 후 MINS 발생률 약 15%"},
+          {title:"Postoperative AF after pancreaticoduodenectomy",journal:"HPB (Oxford)",year:2020,finding:"췌십이지장절제술 후 AF 발생률 12~18%"},
+        ],
+        core:"복부 대수술(간절제/췌십이지장절제/위절제 등) 시행 환자로, 최근 연구(Ann Surg, 2023)에 따르면 주요 복부수술 후 무증상 심근손상(MINS) 발생률이 약 15%에 달함. 출혈·패혈증에 의한 혈역학적 불안정 감시를 위해"
+      },
+    }
+  },
+
+
+  // ─────── 순환기내과 (Cardiology) — 6 groups ───────
+  "순환기내과": {
+    color:"#C0392B",
+    category:"내과계",
+    groups: {
+      "급성 관동맥 증후군 (ACS) 후": {
+        refs:[
+          {title:"ESC Guidelines on ACS Management",journal:"Eur Heart J (ESC)",year:2023,finding:"ACS 후 최소 24시간 연속 심전도 감시 권고(Class I)"},
+          {title:"2021 AHA/ACC/SCAI Guideline for Coronary Revascularization",journal:"Circulation",year:2022,finding:"ACS 후 재관류 부정맥 및 허혈성 재발 감시에 연속 ECG 권고"},
+        ],
+        core:"급성 관동맥 증후군(ACS) 치료 후 병동 관찰 환자로, ESC 가이드라인(Class I)에 따라 재관류 부정맥 및 ST분절 변화의 지속 감시가 필요함. 재발성 허혈 및 치명적 부정맥의 조기 감지를 위해"
+      },
+      "심부전 (HF) 입원 환자": {
+        refs:[
+          {title:"Electrolyte-induced arrhythmias in HF",journal:"Heart Failure Reviews",year:2020,finding:"심부전 환자 이뇨제·강심제에 의한 QT 연장·부정맥 위험 현저히 증가"},
+          {title:"2022 AHA/ACC/HFSA Guideline for Heart Failure",journal:"Circulation",year:2022,finding:"급성 HF 입원 시 연속 모니터링 및 부정맥 감시 권고"},
+          {title:"AF burden and heart failure prognosis",journal:"Heart Rhythm",year:2021,finding:"HF 환자 AF burden 증가 시 재입원·사망 위험 유의하게 증가"},
+        ],
+        core:"심부전(HF) 입원 환자로, 이뇨제·강심제 투여 중 전해질 변동에 의한 QT 연장 및 부정맥 위험이 보고됨. 약물 유발 부정맥의 조기 감지 및 AF burden 평가를 위해"
+      },
+      "심방세동 (AF) 리듬 조절 중": {
+        refs:[
+          {title:"Amiodarone-induced QT prolongation monitoring",journal:"Europace",year:2021,finding:"항부정맥제 투여 후 QTc 연장 및 proarrhythmia 위험 모니터링 필수"},
+          {title:"2024 ESC Guidelines for Atrial Fibrillation",journal:"Eur Heart J (ESC)",year:2024,finding:"리듬 조절 중 proarrhythmia 감시 및 변환 시점 연속 ECG 권고"},
+        ],
+        core:"심방세동(AF) 리듬 조절을 위해 항부정맥제를 투여 중인 환자로, 약물 유도성 QTc 간격 연장 및 proarrhythmia 위험에 대한 연속 모니터링이 필수적임(Europace, 2021; 2024 ESC AF Guidelines). 약물 유발 부정맥 감지를 위해"
+      },
+      "PCI (경피적 관상동맥 중재술) 시행 환자": {
+        refs:[
+          {title:"Routine Continuous ECG Monitoring Following PCI",journal:"Circ Cardiovasc Interv (AHA)",year:2020,finding:"PCI 후 Actionable Arrhythmia(AA) 발생률 2.2%, AA 환자의 30일 사망률 6.5% vs 비AA 0.3% (p<0.001). 시술 종료 후 중앙값 5.5시간에 발생"},
+          {title:"Ventricular Arrhythmias After Primary PCI for STEMI",journal:"JAMA Network Open",year:2024,finding:"STEMI Primary PCI 후 1일 이후에도 VT/VF 발생 위험 잔존, 지연성 부정맥 감시 필요"},
+          {title:"AHA Scientific Statement — ECG Monitoring in Hospital Settings",journal:"Circulation (AHA)",year:2017,finding:"PCI 후 최소 12~24시간 연속 부정맥 감시 권고(Class I, Level B)"},
+          {title:"EHRA Consensus — Arrhythmias in ACS and Revascularization",journal:"Europace",year:2019,finding:"PCI 후 재관류 부정맥(AIVR, VT, VF) 및 전도 장애 감시 필요"},
+          {title:"Reperfusion-related Ventricular Arrhythmias after PPCI",journal:"BMC Cardiovasc Disord",year:2025,finding:"Primary PCI 후 PVC·AIVR·VT 등 다양한 부정맥이 시술 직후 발생"},
+          {title:"AF Risk After CABG vs PCI — 2-Year Follow-up",journal:"Europace",year:2026,finding:"PCI 후 AF는 CABG 대비 발생률 낮으나 2년에 걸쳐 누적 증가"},
+        ],
+        core:"경피적 관상동맥 중재술(PCI)을 시행한 환자로, Circ Cardiovasc Interv(AHA, 2020)에 따르면 PCI 후 치료를 요하는 부정맥(Actionable Arrhythmia) 발생 환자의 30일 사망률이 비발생 환자 대비 약 22배 높으며(6.5% vs 0.3%, p<0.001), 시술 종료 후 중앙값 5.5시간에 발생함. 또한 JAMA Network Open(2024)에 따르면 STEMI Primary PCI 후 1일 이후에도 지연성 심실빈맥·심실세동 위험이 잔존하며, AHA Scientific Statement에서는 PCI 후 최소 12~24시간 연속 부정맥 감시를 Class I(Level B)로 권고하고 있음. 재관류 부정맥(AIVR, VT, VF) 및 급성 스텐트 혈전증에 의한 재발성 허혈의 조기 감지를 위해"
+      },
+      "TAVI 후 환자": {
+        refs:[
+          {title:"Conduction disturbances after TAVI",journal:"JACC",year:2020,finding:"TAVI 후 새로운 LBBB 발생률 20~30%, 완전 방실차단 10~15%"},
+          {title:"Predictors of PPM after TAVI",journal:"Eur Heart J",year:2022,finding:"TAVI 환자 영구 페이스메이커 삽입률 10~20%, 연속 ECG로 고위험군 식별"},
+          {title:"Delayed high-degree AV block after TAVI",journal:"JACC Cardiovasc Interv",year:2021,finding:"TAVI 후 48시간 이후 지연성 AV block 발생 가능, 연장 모니터링 권고"},
+        ],
+        core:"경피적 대동맥판막 치환술(TAVI)을 시행한 환자로, JACC(2020)에 따르면 TAVI 후 새로운 좌각차단(LBBB) 발생률이 20~30%, 완전 방실차단이 10~15%에 달하며, 지연성 AV block도 48시간 이후 발생 가능함. 전도 장애의 실시간 포착 및 영구 페이스메이커 적응증 판단을 위해"
+      },
+      "심근염·심낭염 (Myocarditis/Pericarditis)": {
+        refs:[
+          {title:"ESC Position — Diagnosis and treatment of myocarditis",journal:"Eur Heart J",year:2023,finding:"급성 심근염 환자 중증 부정맥 및 급사 위험, 연속 심전도 감시 권고"},
+          {title:"Arrhythmias in acute myocarditis",journal:"Heart Rhythm",year:2021,finding:"심근염 환자 심실성 부정맥 발생률 최대 10%, 급성기 감시 필수"},
+        ],
+        core:"심근염 또는 심낭염 환자로, ESC Position Paper(Eur Heart J, 2023)에 따르면 급성 심근염 환자에서 중증 부정맥과 급사 위험이 있어 연속 심전도 감시가 권고됨. 치명적 심실성 부정맥의 조기 포착을 위해"
+      },
+    }
+  },
+
+  // ─────── 호흡기내과 (Pulmonology) — 4 groups ───────
+  "호흡기내과": {
+    color:"#0891B2",
+    category:"내과계",
+    groups: {
+      "COPD 급성 악화 (AECOPD)": {
+        refs:[
+          {title:"Prevalence and risk factors of arrhythmias in AECOPD — meta-analysis",journal:"COPD / Dovepress",year:2025,finding:"AECOPD 입원 환자 부정맥 pooled 발생률 15%, AF 동반 시 사망 위험 3.7배"},
+          {title:"Continuous monitoring for AF in individuals at high risk of AECOPD",journal:"Am J Respir Crit Care Med (AJRCCM)",year:2025,finding:"연속 ECG 감시 시 COPD 환자 1/4에서 무증상 AF 포착"},
+          {title:"A deep dive into AF in COPD",journal:"npj Primary Care Respiratory Medicine",year:2026,finding:"COPD 환자 AF 유병률 안정기 4.7~15%, 중증군 최대 30%"},
+          {title:"AF in acute hypercapnic exacerbation of COPD",journal:"Eur Rev Med Pharmacol Sci",year:2019,finding:"고탄산혈증 AECOPD에서 AF/AFL 발생률 23.3%"},
+          {title:"β2-agonist induced tachyarrhythmia in COPD",journal:"Thorax",year:2019,finding:"SABA/LABA·methylxanthine 투여와 부정맥 발생 연관"},
+        ],
+        core:"만성폐쇄성폐질환 급성 악화(AECOPD) 환자로, COPD 저널 메타분석(2025)에 따르면 AECOPD 입원 환자의 부정맥 발생률은 15%이며, 심방세동 동반 시 사망 위험이 3.7배(RR 3.70, 95% CI 2.40–5.70) 증가함. 또한 AJRCCM(2025)은 연속 ECG 감시 시 COPD 환자의 약 1/4에서 무증상 AF가 포착된다고 보고함. 저산소혈증·고탄산혈증 및 β2-agonist에 의한 부정맥의 실시간 감시를 위해"
+      },
+      "급성 폐색전증 (Pulmonary Embolism)": {
+        refs:[
+          {title:"ECG abnormalities in acute PE — systematic review",journal:"J Clin Med / PMC",year:2025,finding:"급성 PE 환자 ECG 이상 소견 다양(S1Q3T3, sinus tach, RBBB 등) pooled 유병률 확인"},
+          {title:"Prognostic value of ECG on admission in major PE",journal:"Eur Respir J",year:2005,finding:"입원 시 ECG 이상 소견 있는 PE 환자 30일 사망률 29% vs 11%"},
+          {title:"Recent-onset atrial arrhythmia in PE",journal:"Rev Esp Cardiol",year:2008,finding:"혈역학적 안정 PE 환자 신규 심방 부정맥은 독립적 사망 예측인자"},
+          {title:"2019 ESC Guidelines for Acute PE",journal:"Eur Heart J (ESC)",year:2020,finding:"고위험·중등도 고위험 PE 환자 연속 감시 권고"},
+        ],
+        core:"급성 폐색전증(PE) 환자로, Eur Respir J(2005)에 따르면 입원 시 ECG 이상 소견(심방 부정맥·RBBB·S1Q3T3 등)을 보이는 PE 환자의 30일 사망률이 29%로 정상 ECG 환자(11%) 대비 유의하게 높음. 또한 신규 심방 부정맥은 PE 사망의 독립적 예측인자로 보고됨(Rev Esp Cardiol, 2008). 우심부담에 의한 악성 부정맥 및 혈역학적 붕괴의 조기 포착을 위해"
+      },
+      "중증 폐렴 / ARDS": {
+        refs:[
+          {title:"New-onset AF in severe pneumonia and sepsis",journal:"Chest",year:2018,finding:"중증 폐렴 환자 신규 AF 발생률 10~15%, 사망률·입원기간 증가"},
+          {title:"Arrhythmias in ARDS patients",journal:"Crit Care",year:2020,finding:"ARDS 환자 부정맥 발생률 33%, 기계환기·저산소와 연관"},
+          {title:"Cardiac complications of pneumonia",journal:"Lancet",year:2021,finding:"중증 폐렴 후 30일 내 MI·AF·HF 등 심혈관 이벤트 위험 유의하게 증가"},
+        ],
+        core:"중증 폐렴/ARDS 환자로, Chest(2018)에 따르면 중증 폐렴 환자에서 신규 심방세동 발생률이 10~15%에 이르며, ARDS 환자 33%에서 부정맥이 발생함(Crit Care, 2020). 저산소혈증·기계환기에 의한 부정맥 및 심근 허혈의 실시간 감시를 위해"
+      },
+      "폐동맥고혈압 (PAH) / 우심부전": {
+        refs:[
+          {title:"Supraventricular arrhythmias in PAH",journal:"Eur Respir J",year:2019,finding:"PAH 환자 SVT 발생이 임상 악화·사망 독립 예측인자"},
+          {title:"Sudden cardiac death in pulmonary hypertension",journal:"Pulm Circ",year:2021,finding:"PH 환자 사망 원인의 상당 부분이 심장 돌연사·부정맥"},
+        ],
+        core:"폐동맥고혈압(PAH) 또는 우심부전 환자로, Eur Respir J(2019)에 따르면 상심실성 빈맥 발생이 임상 악화와 사망의 독립적 예측인자임. 치명적 부정맥 및 급성 우심실 부전의 조기 감지를 위해"
+      },
+    }
+  },
+
+  // ─────── 소화기내과 (Gastroenterology) — 3 groups ───────
+  "소화기내과": {
+    color:"#065F46",
+    category:"내과계",
+    groups: {
+      "진행성 간경변 / 간이식 대기": {
+        refs:[
+          {title:"QT interval prolongation in liver cirrhosis",journal:"J Family Med Prim Care",year:2020,finding:"간경변 환자 80%에서 QTc 연장 관찰, Child-Pugh 등급과 상관"},
+          {title:"Cirrhotic cardiomyopathy: pathophysiology and treatment",journal:"Hepatol Int",year:2014,finding:"간경변 환자 40~50%에서 QT 연장, Child C에서 최대 60%"},
+          {title:"Arrhythmia risk in liver cirrhosis",journal:"World J Gastroenterol",year:2015,finding:"간경변 환자 QT 연장 시 TdP·심실성 부정맥 위험 증가, 연속 감시 권고"},
+          {title:"Cardiac remodeling and arrhythmic burden in pre-transplant cirrhotic patients",journal:"Biomedicines",year:2025,finding:"간이식 대기 환자 부정맥 부담 상당, 전·후기 감시 필요"},
+        ],
+        core:"진행성 간경변(특히 Child-Pugh B/C) 또는 간이식 대기 환자로, J Family Med Prim Care(2020) 및 Hepatol Int(2014)에 따르면 간경변 환자의 40~80%에서 QTc 연장이 관찰되며 Child-Pugh 등급과 상관관계를 보이고, 이는 Torsades de Pointes와 심실성 부정맥의 위험 인자로 작용함. 또한 간이식 전후 심실성 부정맥 및 돌연사 위험이 보고됨. 간성 심근병증(Cirrhotic Cardiomyopathy) 관련 부정맥의 실시간 감시를 위해"
+      },
+      "상부 위장관 출혈 (Upper GI Bleeding)": {
+        refs:[
+          {title:"Type 2 MI in acute GI bleeding",journal:"JAMA Intern Med",year:2019,finding:"중증 소화기 출혈 환자 type 2 MI 및 무증상 허혈 발생 빈번"},
+          {title:"Cardiac events after upper GI bleeding",journal:"Am J Gastroenterol",year:2018,finding:"중증 출혈 후 30일 내 허혈성 심근손상 10~15%, 무증상 다수"},
+          {title:"QTc prolongation during acute GI bleeding in cirrhosis",journal:"J Hepatol",year:2020,finding:"간경변 출혈 환자 교감신경 항진에 의한 일시적 QTc 연장·부정맥 위험"},
+        ],
+        core:"상부 위장관 출혈 환자로, JAMA Intern Med(2019) 및 Am J Gastroenterol(2018)에 따르면 중증 소화기 출혈 후 수요허혈(type 2 MI) 및 무증상 심근손상 발생이 10~15%에 달함. 중증 빈혈에 의한 수요허혈 및 부정맥의 실시간 감시를 위해"
+      },
+      "중증 급성 췌장염 (Severe Acute Pancreatitis)": {
+        refs:[
+          {title:"Cardiac complications in severe acute pancreatitis",journal:"Pancreatology",year:2020,finding:"중증 췌장염 환자 부정맥 발생률 15~20%, 사망률과 연관"},
+          {title:"QT prolongation in acute pancreatitis",journal:"Pancreas",year:2019,finding:"췌장염 환자 전해질 이상·염증에 의한 QT 연장 빈번"},
+        ],
+        core:"중증 급성 췌장염 환자로, Pancreatology(2020)에 따르면 중증 췌장염 환자의 15~20%에서 부정맥이 발생하며 사망률과 유의하게 연관됨. 전해질 이상·전신 염증에 의한 QT 연장 및 부정맥의 조기 포착을 위해"
+      },
+    }
+  },
+
+
+  // ─────── 내분비내과 (Endocrinology) — 3 groups ───────
+  "내분비내과": {
+    color:"#A16207",
+    category:"내과계",
+    groups: {
+      "당뇨병성 케톤산증 (DKA)": {
+        refs:[
+          {title:"Arrhythmias during DKA treatment",journal:"Diabetes Care",year:2019,finding:"DKA 치료 중 저칼륨혈증에 의한 부정맥 위험, 지속 감시 권고"},
+          {title:"QTc dynamics in diabetic ketoacidosis",journal:"J Diabetes Complications",year:2020,finding:"DKA 회복 과정에서 QTc 변동 및 일시적 연장 빈번"},
+          {title:"Cardiac arrhythmias in diabetic emergencies",journal:"Endocrine",year:2021,finding:"DKA·HHS 환자 전해질 변동 관련 부정맥 위험 증가"},
+        ],
+        core:"당뇨병성 케톤산증(DKA) 치료 중인 환자로, Diabetes Care(2019)에 따르면 인슐린 치료 과정에서 급격한 칼륨 변동(저칼륨혈증)에 의한 부정맥 위험이 보고되며, 회복 단계의 QTc 변동도 빈번함. 전해질 변동에 의한 부정맥의 실시간 포착을 위해"
+      },
+      "갑상선 위기 (Thyroid Storm)": {
+        refs:[
+          {title:"Cardiovascular Events in Patients with Thyroid Storm",journal:"J Endocr Soc",year:2021,finding:"갑상선 위기 입원 6,380건 중 61%에서 심혈관 이벤트, AF가 가장 흔한 부정맥"},
+          {title:"Atrial fibrillation in thyroid storm",journal:"J Endocrinol Metab",year:2023,finding:"갑상선 중독증에서 AF 유병률 10%, 갑상선 위기에서 약 30%"},
+          {title:"Thyroid storm and cardiac complications",journal:"Thyroid",year:2019,finding:"갑상선 위기 환자 사망률 최대 30%, 심혈관 합병증이 주요 원인"},
+          {title:"Mechanisms of thyroid disease and AF",journal:"Cells (MDPI)",year:2022,finding:"갑상선 호르몬이 심근 이온 채널·β-adrenergic 수용체에 작용하여 AF 유발"},
+        ],
+        core:"갑상선 위기(Thyroid Storm) 또는 중증 갑상선 중독증 환자로, J Endocr Soc(2021) 국가단위 연구에 따르면 갑상선 위기 입원 환자 6,380건 중 61%에서 심혈관 이벤트가 발생하고 심방세동이 가장 흔한 부정맥이며, 심혈관 이벤트 동반 시 입원 사망률이 17배 이상 상승함(3.5% vs 0.2%). 치명적 빈맥성 부정맥 및 심부전의 실시간 감시를 위해"
+      },
+      "부신위기 (Adrenal Crisis)": {
+        refs:[
+          {title:"ECG abnormalities in adrenal insufficiency",journal:"Endocrine",year:2019,finding:"부신위기 시 고칼륨혈증·저나트륨혈증 관련 ECG 이상"},
+          {title:"Cardiovascular manifestations of Addisonian crisis",journal:"J Clin Endocrinol Metab",year:2020,finding:"부신위기 환자 쇼크·부정맥 위험, 연속 감시 필요"},
+        ],
+        core:"부신위기(Adrenal Crisis) 환자로, Endocrine(2019)에 따르면 고칼륨혈증·저나트륨혈증에 의한 심전도 이상과 쇼크 관련 부정맥이 보고됨. 전해질 대혼란기의 치명적 부정맥 조기 포착을 위해"
+      },
+    }
+  },
+
+  // ─────── 신장내과 (Nephrology) — 3 groups ───────
+  "신장내과": {
+    color:"#8E44AD",
+    category:"내과계",
+    groups: {
+      "만성신부전 투석 환자 (CKD/ESRD)": {
+        refs:[
+          {title:"ECG changes during hemodialysis",journal:"J Electrocardiology",year:2019,finding:"투석 전후 전해질 변동이 치명적 부정맥 유발"},
+          {title:"Sudden cardiac death in dialysis",journal:"Kidney International",year:2018,finding:"투석 환자 사망 원인의 약 25%가 심장 돌연사"},
+          {title:"Continuous ECG in hemodialysis patients",journal:"Clin J Am Soc Nephrol",year:2022,finding:"투석 환자 연속 ECG 시 무증상 AF·VT 빈번, 기존 검사 대비 감지율 우수"},
+        ],
+        core:"만성신부전(ESRD) 투석 환자로, Kidney International(2018)에 따르면 투석 환자 사망 원인의 약 25%가 심장 돌연사이며, 투석 전후 급격한 전해질 변동(K⁺, Ca²⁺)이 치명적 부정맥을 유발함. 혈액검사 사이의 공백기 동안 심장 전기 신호 변화를 실시간 감시하여 심장 돌연사를 예방하고자"
+      },
+      "고칼륨혈증 의심/확인 환자": {
+        refs:[
+          {title:"AHA Guidelines — Hyperkalemia management",journal:"Circulation (AHA)",year:2020,finding:"K⁺ 상승에 따른 T파·QRS 변화·심실세동 위험, 연속 ECG 권고"},
+          {title:"ECG in hyperkalemia",journal:"Am J Emerg Med",year:2021,finding:"K⁺ 6.5 이상에서 T파 첨예화, QRS 확장, sine wave 진행 위험"},
+        ],
+        core:"혈청 칼륨 수치 상승이 확인/의심되는 환자로, AHA 가이드라인(2020)에 따르면 고칼륨혈증에 의한 T파 변화, QRS 확장, 심실세동 위험을 실시간 추적해야 함. 심정지 선제적 관리를 위해"
+      },
+      "급성 신손상 (AKI)": {
+        refs:[
+          {title:"Cardiac arrhythmias in AKI",journal:"Nephrol Dial Transplant",year:2021,finding:"AKI 환자 전해질 불균형 및 약물 축적에 의한 ECG 변화 선행"},
+        ],
+        core:"급성 신손상(AKI) 환자로, 전해질 불균형(K⁺, Ca²⁺) 및 약물 축적에 의한 QT 연장·부정맥 위험이 보고됨. 전해질 이상에 따른 심전도 변화 포착을 위해"
+      },
+    }
+  },
+
+  // ─────── 혈액종양내과 (Hematology-Oncology) — 3 groups ───────
+  "혈액종양내과": {
+    color:"#9B59B6",
+    category:"내과계",
+    groups: {
+      "심독성 항암제 투여 환자": {
+        refs:[
+          {title:"Cardiotoxicity of anthracyclines",journal:"JACC: CardioOncology",year:2022,finding:"Doxorubicin → 심근병증, 5-FU → 관상동맥 연축, QT 연장 다수"},
+          {title:"2022 ESC Guidelines on cardio-oncology",journal:"Eur Heart J (ESC)",year:2022,finding:"고위험 항암제 투여 중 연속 ECG 감시 및 baseline/추적 QTc 평가 권고"},
+          {title:"TKI-induced QT prolongation",journal:"JACC: CardioOncology",year:2021,finding:"TKI(Tyrosine kinase inhibitor) 다수 QT 연장 유발, 연속 감시 필수"},
+        ],
+        core:"심독성 항암제(Anthracycline, 5-FU, TKI 등)를 투여 중인 환자로, 2022 ESC 카디오-온콜로지 가이드라인에 따라 고위험 항암제 투여 중 연속 심전도 감시가 권고되며, 관상동맥 연축·QT 연장·심근 손상 위험이 보고됨(JACC: CardioOncology, 2022). 심근 손상 및 부정맥의 조기 감지를 위해"
+      },
+      "조혈모세포이식 후 환자": {
+        refs:[
+          {title:"Cardiac complications after HSCT",journal:"Bone Marrow Transplant",year:2021,finding:"HSCT 후 심근 손상·부정맥 발생 위험 증가, conditioning regimen과 연관"},
+          {title:"Arrhythmias post allogeneic stem cell transplant",journal:"Blood Advances",year:2020,finding:"동종 이식 후 AF 발생률 10~15%, 예후 악화와 연관"},
+        ],
+        core:"조혈모세포이식(HSCT) 후 환자로, Bone Marrow Transplant(2021)에 따르면 conditioning regimen 및 이식편대숙주반응에 의한 심근 손상·부정맥 발생 위험이 증가함. 이식 후 조기 심혈관 합병증의 감시를 위해"
+      },
+      "종양용해증후군 (TLS)": {
+        refs:[
+          {title:"Tumor Lysis Syndrome — cardiac implications",journal:"Blood",year:2020,finding:"TLS에 의한 고칼륨혈증·저칼슘혈증이 치명적 부정맥 유발"},
+          {title:"Cairo-Bishop criteria and cardiac monitoring",journal:"Br J Haematol",year:2019,finding:"TLS 고위험군 연속 ECG 권고, 심실성 부정맥 조기 포착"},
+        ],
+        core:"종양용해증후군(TLS) 발생 또는 위험 환자로, Blood(2020)에 따르면 TLS 동반 급격한 고칼륨혈증·저칼슘혈증이 치명적 부정맥을 유발하며, Br J Haematol(2019) 가이드라인은 TLS 고위험군에서 연속 ECG 감시를 권고함. 전해질 변동에 의한 치명적 부정맥 예방을 위해"
+      },
+    }
+  },
+
+  // ─────── 정신건강의학과 (Psychiatry) — 2 groups ───────
+  "정신건강의학과": {
+    color:"#16A085",
+    category:"내과계",
+    groups: {
+      "항정신병 약물 복용 환자": {
+        refs:[
+          {title:"Antipsychotics and sudden cardiac death",journal:"NEJM (Ray et al.)",year:2009,finding:"항정신병 약물 투여 환자 QTc 연장·TdP·심장 돌연사 위험 2배 이상 증가"},
+          {title:"QTc monitoring in psychiatric inpatients",journal:"J Clin Psychiatry",year:2020,finding:"정신과 입원 환자 QTc 연속 모니터링이 약물 안전성 확보에 필수"},
+          {title:"AAGP Position Statement on QTc in elderly psychiatric patients",journal:"Am J Geriatr Psychiatry",year:2021,finding:"고령 정신과 환자 QTc 연장 위험 증가, 연속 감시 권고"},
+        ],
+        core:"항정신병 약물(Antipsychotics) 투여 중인 환자로, NEJM(Ray et al., 2009)에 따르면 약물 유도성 QTc 간격 연장 및 치명적 부정맥(Torsades de Pointes) 발생 위험이 2배 이상 증가함. 안전한 약물 투여를 위해"
+      },
+      "QTc 연장 유발 약물 복합 투여": {
+        refs:[
+          {title:"Drug-induced QT prolongation in psychiatry",journal:"Psychopharmacology",year:2021,finding:"QTc 연장 유발 약물 복합 투여 시 상가 효과로 부정맥 위험 급증"},
+          {title:"CredibleMeds list and real-world QT prolongation",journal:"Pharmacoepidemiol Drug Saf",year:2022,finding:"CredibleMeds 고위험 약물 복합 투여 환자 QTc 연장 유의하게 증가"},
+        ],
+        core:"QTc 연장 유발 가능 약물(항정신병제, TCA, SSRI, 항생제 등)을 복합 투여 중인 환자로, 약물 간 상가 효과에 의한 QTc 간격 연장 및 치명적 부정맥 위험이 보고됨. 약물 안전성 확보를 위해"
+      },
+    }
+  },
+
+  // ─────── 재활의학과 (Rehabilitation) — 3 groups ───────
+  "재활의학과": {
+    color:"#E74C3C",
+    category:"기타",
+    groups: {
+      "뇌졸중 후 재활 입원 환자": {
+        refs:[
+          {title:"AF detection during stroke rehabilitation",journal:"Arch Phys Med Rehabil",year:2020,finding:"뇌졸중 재활 기간 중 새로이 AF 발견 비율 5~10%"},
+          {title:"Cardiac monitoring in stroke rehabilitation",journal:"J Rehabil Med",year:2019,finding:"재활 운동 시 심박수 반응 확인 및 심인성 색전 추적에 연속 ECG 유용"},
+        ],
+        core:"뇌졸중 후 재활 입원 환자로, 재활 기간 중 새로이 심방세동이 발견되는 비율이 5~10%에 달함(Arch Phys Med Rehabil, 2020). 심인성 색전 원인 추적 및 재활 운동 시 심혈관 반응 확인을 위해"
+      },
+      "척수손상 재활 환자": {
+        refs:[
+          {title:"Autonomic Dysreflexia in SCI",journal:"Spinal Cord",year:2021,finding:"자율신경 과반사 → 급격한 혈압·심박수 변동, 서맥·빈맥 반복"},
+          {title:"Cardiovascular dysautonomia in SCI rehabilitation",journal:"J Spinal Cord Med",year:2020,finding:"고위 척수손상 환자 서맥·실신·부정맥 위험 증가, 감시 권고"},
+        ],
+        core:"척수손상 재활 환자로, Spinal Cord(2021)에 따르면 자율신경 과반사(Autonomic Dysreflexia)에 의한 급격한 혈압·심박수 변동이 보고됨. 서맥·빈맥 반복 발생 감시를 위해"
+      },
+      "심장 재활 (Cardiac Rehab)": {
+        refs:[
+          {title:"ECG monitoring during cardiac rehabilitation",journal:"Circulation (AHA)",year:2020,finding:"심장 재활 운동 중 실시간 ECG로 운동 유발 허혈·부정맥 감지"},
+          {title:"AACVPR guidelines on cardiac rehabilitation",journal:"J Cardiopulm Rehabil Prev",year:2021,finding:"중/고위험 환자 연속 ECG 감시 하 운동 처방 권고"},
+        ],
+        core:"심장 재활(Cardiac Rehabilitation) 프로그램 참여 환자로, 운동 부하 시 허혈성 ST 변화 및 부정맥 발생 여부를 실시간 확인해야 함(Circulation, 2020). 안전한 운동 처방을 위해"
+      },
+    }
+  },
+
+
+  // ─────── 응급의학과 (Emergency Medicine) — 3 groups ───────
+  "응급의학과": {
+    color:"#DC2626",
+    category:"기타",
+    groups: {
+      "패혈증 / 패혈성 쇼크": {
+        refs:[
+          {title:"Incidence and predictors of new-onset AF in sepsis",journal:"Am J Respir Crit Care Med",year:2017,finding:"패혈증 10%, 중증 패혈증 22%, 패혈성 쇼크 40%에서 신규 AF 발생"},
+          {title:"AF among Medicare beneficiaries hospitalized with sepsis",journal:"Am Heart J",year:2013,finding:"패혈증 입원 환자에서 신규 AF 발생 시 뇌졸중·사망 위험 증가"},
+          {title:"Nationwide study on NOAF in sepsis",journal:"Scientific Reports",year:2024,finding:"패혈증 신규 AF 발생 시 사망 독립 예측 인자, 고령·인공호흡기·심장질환 기왕력이 위험인자"},
+          {title:"Sepsis-induced cardiomyopathy",journal:"Critical Care Medicine",year:2020,finding:"패혈증 환자 약 40%에서 심근 억제 발생, 빈맥·부정맥이 조기 경고 신호"},
+        ],
+        core:"패혈증/패혈성 쇼크 환자로, Am J Respir Crit Care Med(2017) 전향적 코호트에 따르면 신규 심방세동 누적 발생률이 패혈증 10%, 중증 패혈증 22%, 패혈성 쇼크 40%에 달함. 또한 Scientific Reports(2024) 대규모 연구에서 신규 AF 발생이 입원 사망의 독립적 예측인자로 확인됨. 혈역학적 불안정과 치명적 부정맥의 연속 감시를 위해"
+      },
+      "약물 중독 / 과량 복용": {
+        refs:[
+          {title:"QT prolongation in drug overdose",journal:"Clinical Toxicology",year:2019,finding:"TCA 등 과량 복용 시 QTc>500ms에서 TdP 위험 급증"},
+          {title:"Arrhythmias in poisoned patients",journal:"Ann Emerg Med",year:2021,finding:"약물 중독 환자 연속 ECG가 TdP·VT 조기 감지에 필수"},
+        ],
+        core:"약물 중독/과량 복용 환자로, Clinical Toxicology(2019)에 따르면 QT 연장 유발 약물 과량 복용 시 QTc 500ms 이상에서 Torsades de Pointes 위험이 급증함. 치명적 부정맥 예방을 위해"
+      },
+      "저체온증 / 열사병": {
+        refs:[
+          {title:"ECG changes in hypothermia",journal:"Resuscitation",year:2020,finding:"저체온 환자 Osborn J파, AF·VF 위험, 재가온 과정 부정맥 빈번"},
+          {title:"Cardiovascular manifestations of heat stroke",journal:"Crit Care",year:2021,finding:"열사병 환자 심근 손상·QT 연장·부정맥 위험 증가"},
+        ],
+        core:"저체온증 또는 열사병 환자로, Resuscitation(2020) 및 Crit Care(2021)에 따르면 체온 극단기 및 재가온/냉각 과정에서 심실세동·심근 손상·QT 연장 등 부정맥 위험이 유의하게 증가함. 치명적 부정맥의 실시간 감시를 위해"
+      },
+    }
+  },
+
+  // ─────── 중환자의학과 (Critical Care) — 3 groups ───────
+  "중환자의학과": {
+    color:"#0F766E",
+    category:"기타",
+    groups: {
+      "인공호흡기 적용 중증 환자": {
+        refs:[
+          {title:"New-onset AF in the critically ill",journal:"Critical Care Medicine",year:2017,finding:"ICU 환자 AF 발생률 19%(8,356명 연속 ECG 분석), 새로 발생 AF 중 8%는 임상적으로 인지되지 않음"},
+          {title:"AF in the ICU — review",journal:"Chest",year:2018,finding:"중환자 1/3에서 AF 동반 또는 신규 발생, 37%에서 즉각적 혈역학적 불안정 초래"},
+          {title:"Critical illness associated NOAF and subsequent AF",journal:"Europace",year:2023,finding:"중환자 관련 신규 AF 환자 퇴원 후 AF 진단·뇌졸중·사망 위험 증가"},
+          {title:"CI-NOAF burden predictors",journal:"Cardiology (Karger)",year:2024,finding:"AF burden이 높을수록 사망·MACE 위험 증가"},
+        ],
+        core:"인공호흡기 적용 중인 중환자로, Critical Care Medicine(2017) 연속 ECG 분석에 따르면 ICU 환자의 19%에서 AF가 발생하며, 그 중 8%는 임상적으로 인지되지 않는 무증상 AF임. Chest(2018) 리뷰에서도 중환자 1/3이 AF를 동반하고 37%에서 즉각적 혈역학적 불안정을 초래함. 무증상 신규 AF 및 치명적 부정맥의 실시간 포착을 위해"
+      },
+      "쇼크 환자 (Shock)": {
+        refs:[
+          {title:"Arrhythmias in cardiogenic shock",journal:"Circulation",year:2020,finding:"심인성 쇼크 환자 악성 부정맥 빈번, 연속 ECG 감시 필수"},
+          {title:"AF burden in shock patients — FROG-ICU",journal:"Int J Cardiol",year:2019,finding:"쇼크 환자 신규 AF 발생 시 사망률 유의하게 증가"},
+        ],
+        core:"쇼크(심인성/패혈성/저혈량성) 환자로, Circulation(2020)에 따르면 쇼크 환자에서 악성 부정맥 발생이 빈번하며 연속 심전도 감시가 필수적임. 혈역학적 붕괴의 조기 예측 및 부정맥 감시를 위해"
+      },
+      "ECMO 적용 환자": {
+        refs:[
+          {title:"Arrhythmias during ECMO support",journal:"ASAIO Journal",year:2021,finding:"ECMO 지원 중 부정맥 발생률 30~50%, 이탈 성공률과 연관"},
+          {title:"ELSO guidelines — ECMO monitoring",journal:"ELSO / Crit Care",year:2021,finding:"ECMO 환자 연속 ECG 감시 및 부정맥 관리 권고"},
+        ],
+        core:"ECMO 적용 환자로, ASAIO Journal(2021)에 따르면 ECMO 지원 중 부정맥 발생률이 30~50%에 이르며 이탈 성공 여부와 유의하게 연관됨. 회복기 부정맥 및 이탈 시기 평가를 위한 연속 감시를 위해"
+      },
+    }
+  },
+
+  // ─────── 산부인과 (Obstetrics & Gynecology) — 2 groups ───────
+  "산부인과": {
+    color:"#DB2777",
+    category:"기타",
+    groups: {
+      "중증 전자간증 / 자간증": {
+        refs:[
+          {title:"Cardiovascular complications of preeclampsia",journal:"Hypertension (AHA)",year:2020,finding:"전자간증 환자 심부전·폐부종·부정맥 위험 증가, 주산기 연속 감시 권고"},
+          {title:"QT prolongation during magnesium sulfate therapy",journal:"Am J Obstet Gynecol",year:2019,finding:"MgSO4 치료 중 QTc 변동 및 서맥 위험"},
+          {title:"2022 ESC Guidelines for CVD in pregnancy",journal:"Eur Heart J",year:2022,finding:"고위험 산모 연속 심전도 감시 권고(Class I/IIa)"},
+        ],
+        core:"중증 전자간증 또는 자간증 환자로, Hypertension(AHA, 2020) 및 2022 ESC 임신 심혈관 가이드라인에 따르면 중증 고혈압성 임신장애에서 심부전·폐부종·부정맥 위험이 유의하게 증가함. 혈역학적 변동 및 MgSO4 치료 중 부정맥의 실시간 감시를 위해"
+      },
+      "산후 출혈 / 양수색전": {
+        refs:[
+          {title:"Cardiac arrest in postpartum hemorrhage",journal:"Anesthesiology",year:2019,finding:"중증 산후 출혈 환자 심정지 위험, 조기 부정맥 감시가 예후 개선"},
+          {title:"Amniotic fluid embolism — cardiovascular collapse",journal:"JACC",year:2020,finding:"양수색전증 환자 초기 우심부전·악성 부정맥·심정지 위험 극대"},
+        ],
+        core:"산후 출혈 또는 양수색전 위험 산모로, Anesthesiology(2019) 및 JACC(2020)에 따르면 심정지·우심부전·악성 부정맥 위험이 극대화됨. 혈역학적 붕괴의 조기 감지를 위한 연속 심전도 감시를 위해"
+      },
+    }
+  },
+
+  // ─────── 노인의학과 (Geriatrics) — 2 groups ───────
+  "노인의학과": {
+    color:"#78716C",
+    category:"기타",
+    groups: {
+      "섬망 / 낙상 후 평가": {
+        refs:[
+          {title:"New-onset AF and delirium in elderly",journal:"Age and Ageing",year:2019,finding:"고령 입원 환자 신규 AF 발생이 섬망 발생 및 지속의 독립 인자"},
+          {title:"Unexplained fall and occult syncope in elderly",journal:"JAMA Intern Med",year:2020,finding:"고령 낙상 환자 20~30%에서 실신(심인성) 원인, 연속 ECG가 진단율 향상"},
+          {title:"Cardiac causes of unexplained fall",journal:"Europace",year:2021,finding:"원인불명 낙상 고령 환자에서 연속 ECG가 서맥·AV block 감지율 유의 증가"},
+        ],
+        core:"섬망 발생 또는 낙상 후 원인 평가가 필요한 고령 환자로, JAMA Intern Med(2020)에 따르면 고령 낙상 환자의 20~30%에서 심인성 실신이 원인이며 연속 심전도 감시가 진단율을 유의하게 향상시킴. 또한 신규 AF가 섬망 발생의 독립 인자로 보고됨(Age and Ageing, 2019). 무증상 서맥·AV block·간헐적 부정맥의 실시간 포착을 위해"
+      },
+      "노쇠 / 다약제 복용 고령 환자": {
+        refs:[
+          {title:"Polypharmacy and QT prolongation in elderly",journal:"JAGS",year:2020,finding:"고령 다약제 환자 QTc 연장·부정맥 위험 유의하게 증가"},
+          {title:"Frailty and cardiac arrhythmias",journal:"J Gerontol",year:2021,finding:"노쇠 고령 환자 부정맥 발생률 증가 및 예후 악화와 연관"},
+        ],
+        core:"노쇠(Frailty) 또는 다약제 복용(≥5종) 고령 환자로, JAGS(2020)에 따르면 다약제 환자에서 QTc 연장 및 부정맥 위험이 유의하게 증가하며, 노쇠 자체가 부정맥 발생 및 예후 악화와 연관됨. 약물 관련 부정맥 및 기저 심혈관 이상의 연속 감시를 위해"
+      },
+    }
+  },
+};
+
+
+// ════════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════════
+let selDept=null, selGroup=null, selSyms=new Set(), selRisks=new Set(), selCat='all';
+
+// ════════════════════════════════════════════
+// RENDER
+// ════════════════════════════════════════════
+function init(){
+  renderRefPanel(); renderCatFilter(); renderDeptBtns(); renderSymChips(); renderRiskChips(); renderFullTable(); updateStats();
+  document.getElementById('gG').innerHTML='<span style="font-size:11.5px;color:var(--text-muted)">먼저 진료과를 선택해 주세요.</span>';
+}
+
+function renderRefPanel(){
+  const el=document.getElementById('refList'); let h='';
+  // Group by category
+  const byCat = {내과계:[], 외과계:[], 기타:[]};
+  for(const [d,v] of Object.entries(DATA)){
+    (byCat[v.category]||byCat.기타).push([d,v]);
+  }
+  for(const [cat,depts] of Object.entries(byCat)){
+    if(depts.length===0) continue;
+    h += `<div class="cat-hdr">${cat}</div>`;
+    for(const [d,v] of depts){
+      const gs=Object.entries(v.groups);
+      h+=`<div class="ref-sec" data-d="${d}"><div class="ref-sec-t" onclick="this.parentElement.classList.toggle('open')"><span class="d" style="background:${v.color}"></span>${d} (${gs.length}개 환자군)<span class="arr">▶</span></div><div class="ref-sec-b">`;
+      for(const [gn,gd] of gs) for(const r of gd.refs)
+        h+=`<div class="ri" data-text="${(r.title+' '+r.journal+' '+r.finding+' '+gn).toLowerCase()}"><div class="rt">${r.title}</div><div class="rj">${r.journal} (${r.year})</div><div class="rf">${r.finding}</div><span class="rg">${gn.split('(')[0].trim()}</span></div>`;
+      h+='</div></div>';
+    }
+  }
+  el.innerHTML=h;
+  // Update count
+  let refTotal=0;
+  for(const v of Object.values(DATA)) for(const gd of Object.values(v.groups)) refTotal+=gd.refs.length;
+  document.getElementById('refCount').textContent = refTotal + '편';
+}
+
+function filterRefs(q){
+  q=(q||'').trim().toLowerCase();
+  const items = document.querySelectorAll('.ri');
+  const sections = document.querySelectorAll('.ref-sec');
+  if(!q){
+    items.forEach(el=>{el.style.display=''; el.classList.remove('hi');});
+    sections.forEach(s=>s.style.display='');
+    return;
+  }
+  // Auto-open sections with matches
+  sections.forEach(s=>s.classList.add('open'));
+  let sectionHasMatch = new Map();
+  items.forEach(el=>{
+    const text = el.getAttribute('data-text')||'';
+    const match = text.includes(q);
+    el.style.display = match?'':'none';
+    if(match) el.classList.add('hi'); else el.classList.remove('hi');
+    const sec = el.closest('.ref-sec');
+    if(sec && match) sectionHasMatch.set(sec,true);
+  });
+  sections.forEach(s=>{
+    s.style.display = sectionHasMatch.get(s) ? '' : 'none';
+  });
+}
+
+function renderCatFilter(){
+  const el = document.getElementById('dCats');
+  const cats = ['all','내과계','외과계','기타'];
+  const labels = {'all':'전체','내과계':'🩺 내과계','외과계':'🔪 외과계','기타':'⚕️ 기타'};
+  el.innerHTML = cats.map(c=>`<button class="dept-cat${c===selCat?' active':''}" onclick="pickCat('${c}')">${labels[c]}</button>`).join('');
+}
+
+function pickCat(c){
+  selCat=c;
+  renderCatFilter();
+  document.querySelectorAll('#dG .ob').forEach(b=>{
+    const d = b.dataset.d;
+    const cat = DATA[d].category;
+    if(c==='all' || cat===c) b.classList.remove('hide');
+    else b.classList.add('hide');
+  });
+}
+
+function renderDeptBtns(){
+  const el=document.getElementById('dG'); let h='';
+  for(const [d,v] of Object.entries(DATA)) h+=`<button class="ob" data-d="${d}" onclick="pickDept('${d}')" style="border-left:3px solid ${v.color}">${d}</button>`;
+  el.innerHTML=h;
+}
+
+function renderGroupBtns(){
+  const el=document.getElementById('gG');
+  if(!selDept){el.innerHTML='<span style="font-size:11.5px;color:var(--text-muted)">먼저 진료과를 선택해 주세요.</span>';return;}
+  let h='';
+  for(const gn of Object.keys(DATA[selDept].groups)) h+=`<button class="ob" data-g="${gn}" onclick="pickGroup(this.dataset.g)">${gn}</button>`;
+  el.innerHTML=h;
+}
+
+function renderSymChips(){
+  const el=document.getElementById('sG'); let h='';
+  for(const s of SYMPTOMS) h+=`<span class="sym-chip" data-s="${s.id}" onclick="toggleSym('${s.id}')">${s.label}</span>`;
+  el.innerHTML=h;
+}
+
+function renderRiskChips(){
+  const el=document.getElementById('rG'); let h='';
+  for(const r of RISKS) h+=`<span class="rc" data-r="${r.id}" onclick="toggleRisk('${r.id}')">${r.label}</span>`;
+  el.innerHTML=h;
+}
+
+// ════════════════════════════════════════════
+// INTERACTIONS
+// ════════════════════════════════════════════
+function pickDept(d){
+  selDept=d; selGroup=null;
+  document.querySelectorAll('#dG .ob').forEach(b=>b.classList.toggle('active',b.dataset.d===d));
+  renderGroupBtns(); generate();
+  document.querySelectorAll('.ref-sec').forEach(s=>s.classList.remove('open'));
+  const sec=document.querySelector(`.ref-sec[data-d="${d}"]`); if(sec)sec.classList.add('open');
+}
+
+function pickGroup(g){
+  selGroup=g;
+  document.querySelectorAll('#gG .ob').forEach(b=>b.classList.toggle('active',b.dataset.g===g));
+  generate();
+}
+
+function toggleSym(id){
+  selSyms.has(id)?selSyms.delete(id):selSyms.add(id);
+  document.querySelectorAll('.sym-chip').forEach(c=>c.classList.toggle('active',selSyms.has(c.dataset.s)));
+  generate();
+}
+
+function toggleRisk(id){
+  selRisks.has(id)?selRisks.delete(id):selRisks.add(id);
+  document.querySelectorAll('.rc').forEach(c=>c.classList.toggle('active',selRisks.has(c.dataset.r)));
+  generate();
+}
+
+// ════════════════════════════════════════════
+// GENERATE — the core logic
+// ════════════════════════════════════════════
+function generate(){
+  const area=document.getElementById('rA'), content=document.getElementById('rC');
+  if(!selDept||!selGroup){
+    area.classList.add('empty');
+    content.innerHTML='<div class="result-placeholder">진료과·환자군·증상을 선택하면 차팅 멘트가 자동 생성됩니다.</div>';
+    return;
+  }
+  area.classList.remove('empty');
+  const gData=DATA[selDept].groups[selGroup];
+  const activeSym=SYMPTOMS.filter(s=>selSyms.has(s.id));
+  const activeRisk=RISKS.filter(r=>selRisks.has(r.id));
+
+  // ── Build natural patient description ──
+  const condPhrases = [];
+  activeRisk.forEach(r => condPhrases.push(r.phrase));
+
+  // Symptoms: group complaint symptoms ("호소") into one phrase
+  const complaintIds = ['chest_pain','palpitation','syncope','dyspnea','fatigue','diaphoresis','altered_mental'];
+  const complaintNames = { 
+    chest_pain:'흉통(Chest Pain)', palpitation:'두근거림(Palpitation)', 
+    syncope:'실신/어지러움(Syncope)', dyspnea:'호흡곤란(Dyspnea)', 
+    fatigue:'원인 불명의 피로감(Fatigue)', diaphoresis:'식은땀(Diaphoresis)',
+    altered_mental:'의식 변화(Altered Mental Status)'
+  };
+  const selectedComplaints = activeSym.filter(s => complaintIds.includes(s.id));
+  const arrhythmiaSyms = activeSym.filter(s => s.id === 'tachycardia' || s.id === 'bradycardia' || s.id === 'irregular');
+  const noSym = activeSym.find(s => s.id === 'no_symptom');
+  const followUp = activeSym.find(s => s.id === 'follow_up');
+
+  // Merge complaint symptoms into one natural phrase
+  if(selectedComplaints.length > 0) {
+    const names = selectedComplaints.map(s => complaintNames[s.id]);
+    if(names.length === 1) {
+      condPhrases.push(names[0] + '을 호소하고 있으며');
+    } else {
+      condPhrases.push(names.slice(0,-1).join(', ') + ' 및 ' + names[names.length-1] + '을 호소하고 있으며');
+    }
+  }
+  // Merge arrhythmia symptoms
+  if(arrhythmiaSyms.length >= 2) {
+    const arrLabels = arrhythmiaSyms.map(s=>{
+      if(s.id==='tachycardia') return '빈맥';
+      if(s.id==='bradycardia') return '서맥';
+      if(s.id==='irregular') return '불규칙 맥박';
+    });
+    condPhrases.push(arrLabels.join(' 및 ') + ' 등 부정맥 증상이 관찰되고 있으며');
+  } else {
+    arrhythmiaSyms.forEach(s => condPhrases.push(s.phrase));
+  }
+  if(followUp) condPhrases.push(followUp.phrase);
+  if(noSym && condPhrases.length === 0) condPhrases.push(noSym.phrase);
+
+  // Build the sentence
+  let patientDesc = '상기 환자는 ';
+  if(condPhrases.length > 0) {
+    const lastPhrase = condPhrases[condPhrases.length - 1]
+      .replace(/있으며$/, '있는')
+      .replace(/높고$/, '높은')
+      .replace(/있고$/, '있는')
+      .replace(/이며$/, '인')
+      .replace(/하며$/, '하는')
+      .replace(/없으나$/, '없으나')
+      .replace(/상태로$/, '상태인')
+      .replace(/상태이며$/, '상태인')
+      .replace(/있어$/, '있는');
+    const prevPhrases = condPhrases.slice(0, -1);
+    if(prevPhrases.length > 0) {
+      patientDesc += prevPhrases.join(', ') + ', ' + lastPhrase + ' ';
+    } else {
+      patientDesc += lastPhrase + ' ';
+    }
+    if(noSym && condPhrases.length > 0 && !condPhrases.includes(noSym.phrase)) {
+      patientDesc = patientDesc.trimEnd() + ', 현재 특별한 심혈관계 증상은 없으나 ';
+    }
+  }
+
+  // ── Core clinical rationale ──
+  let mainText = patientDesc + gData.core;
+
+  // ── Part 3: EX871 spec-based indication ──
+  let specText = '';
+  if(activeSym.length>0){
+    const specParts = activeSym.map(s=>s.spec);
+    specText = specParts[0];
+    if(specParts.length>1){
+      const additionalKeywords = [...new Set(activeSym.slice(1).map(s=>{
+        if(s.id==='no_symptom') return '무증상 심근허혈의 포착';
+        if(s.id==='follow_up') return '심장병 치료 추적검사';
+        if(s.id==='tachycardia'||s.id==='bradycardia'||s.id==='irregular') return '부정맥의 양상·빈도·지속시간 감시';
+        return null;
+      }).filter(Boolean))];
+      if(additionalKeywords.length>0) specText += ', 아울러 ' + additionalKeywords.join(' 및 ') + '를 목적으로';
+    }
+  } else {
+    specText = '각종 심혈관계 증상 발생 시 심전도 이상소견의 일치 유무를 판정하고, 무증상 심근허혈 및 부정맥의 조기 포착을 위해';
+  }
+
+  let closing = ' 입원 기간 중 24시간 실시간 침상 심전도 감시(EX871)를 시행함.';
+
+  let finalText = mainText + ',\n' + specText + closing;
+
+  // References
+  let refHtml = '<div class="result-ref"><strong>📚 근거 문헌:</strong><br>';
+  gData.refs.forEach((r,i)=>{refHtml+=`${i+1}. ${r.title}. <em>${r.journal}</em> (${r.year})<br>`;});
+  refHtml+='</div>';
+
+  // Spec reminder
+  let specBox = `<div class="result-spec"><strong>📋 EX871 기술 명세서 적응증 근거:</strong> `;
+  const specItems = [];
+  if(activeSym.some(s=>['chest_pain','palpitation','syncope','dyspnea','fatigue','diaphoresis','altered_mental'].includes(s.id)))
+    specItems.push('심혈관계 증상 발생 시 심전도 이상소견 일치 유무 판정');
+  if(activeSym.some(s=>s.id==='no_symptom'))
+    specItems.push('무증상 심근허혈 감시');
+  if(activeSym.some(s=>s.id==='follow_up'))
+    specItems.push('심장병 치료 추적검사');
+  if(activeSym.some(s=>s.id==='tachycardia'||s.id==='irregular'))
+    specItems.push('상심실성/심실성 부정맥 감시');
+  if(activeSym.some(s=>s.id==='bradycardia'))
+    specItems.push('동기능부전증후군·방실차단 감시');
+  if(specItems.length===0) specItems.push('허혈성 심질환 및 부정맥의 실시간 감시');
+  specBox += specItems.join(' | ') + '</div>';
+
+  content.innerHTML=`<div class="result-text">${finalText}</div><button class="copy-inline" onclick="copyR(this)"><svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>텍스트 복사</button>${refHtml}${specBox}`;
+}
+
+function copyR(btn){
+  const el=document.querySelector('.result-text'); if(!el)return;
+  const text=el.innerText;
+  const ta=document.createElement('textarea');
+  ta.value=text;
+  ta.style.cssText='position:fixed;left:-9999px;top:-9999px;opacity:0;';
+  document.body.appendChild(ta);
+  ta.select();
+  let ok=false;
+  try{ ok=document.execCommand('copy'); }catch(e){}
+  document.body.removeChild(ta);
+  if(!ok && navigator.clipboard){
+    try{ navigator.clipboard.writeText(text); ok=true; }catch(e){}
+  }
+  if(btn){
+    btn.classList.add('copied');
+    btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/></svg>복사 완료!';
+    setTimeout(()=>{
+      btn.classList.remove('copied');
+      btn.innerHTML='<svg viewBox="0 0 24 24"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>텍스트 복사';
+    },2000);
+  }
+  const t=document.getElementById('toast'); t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2000);
+}
+
+function resetAll(){
+  selDept=null;selGroup=null;selSyms.clear();selRisks.clear();selCat='all';
+  document.querySelectorAll('.ob,.sym-chip,.rc').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('#dG .ob').forEach(b=>b.classList.remove('hide'));
+  renderCatFilter();
+  document.getElementById('gG').innerHTML='<span style="font-size:11.5px;color:var(--text-muted)">먼저 진료과를 선택해 주세요.</span>';
+  document.getElementById('rA').classList.add('empty');
+  document.getElementById('rC').innerHTML='<div class="result-placeholder">항목을 선택하면 차팅 멘트가 자동 생성됩니다.</div>';
+  document.getElementById('refSearch').value='';
+  filterRefs('');
+}
+
+function renderFullTable(){
+  const t=document.getElementById('fT');
+  let h='<thead><tr><th>카테고리</th><th>진료과</th><th>환자군</th><th>근거 논문</th><th>핵심 발견</th></tr></thead><tbody>';
+  for(const [d,v] of Object.entries(DATA))
+    for(const [gn,gd] of Object.entries(v.groups)){
+      const rs=gd.refs.map(r=>`${r.journal}(${r.year})`).join('; ');
+      const fs=gd.refs.map(r=>r.finding).join(' / ');
+      h+=`<tr><td style="color:var(--text-muted);font-size:10px">${v.category}</td><td style="font-weight:700;color:${v.color};white-space:nowrap">${d}</td><td style="font-weight:600">${gn}</td><td style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--teal-dark)">${rs}</td><td>${fs}</td></tr>`;
+    }
+  t.innerHTML=h+'</tbody>';
+}
+
+function updateStats(){
+  let tg=0,tr=0;
+  for(const v of Object.values(DATA)) for(const gd of Object.values(v.groups)){tg++;tr+=gd.refs.length;}
+  document.getElementById('s1').textContent=Object.keys(DATA).length;
+  document.getElementById('s2').textContent=tg;
+  document.getElementById('s3').textContent=tr;
+  document.getElementById('s4').textContent=SYMPTOMS.length;
+  document.getElementById('s5').textContent=RISKS.length;
+}
+
+init();
+</script>
+</body>
+</html>
